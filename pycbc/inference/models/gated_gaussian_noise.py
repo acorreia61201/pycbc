@@ -69,11 +69,11 @@ class BaseGatedGaussian(BaseGaussianNoise):
         # read in whether to zero out data before/after gate from kwargs
         try:
             self.zero_before_gate = bool(static_params['zero_before_gate'])
-        except KeyError:
+        except (KeyError, TypeError):
             self.zero_before_gate = False
         try:
             self.zero_after_gate = bool(static_params['zero_after_gate'])
-        except KeyError:
+        except (KeyError, TypeError):
             self.zero_after_gate = False
         # set up the boiler-plate attributes
         super().__init__(
