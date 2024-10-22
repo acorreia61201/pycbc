@@ -47,7 +47,6 @@ class BaseGatedGaussian(BaseGaussianNoise):
     def __init__(self, variable_params, data, low_frequency_cutoff, psds=None,
                  high_frequency_cutoff=None, normalize=False,
                  static_params=None, highpass_waveforms=False,
-                 zero_before_gate=False, zero_after_gate=False,
                  **kwargs):
         # we'll want the time-domain data, so store that
         self._td_data = {}
@@ -67,8 +66,15 @@ class BaseGatedGaussian(BaseGaussianNoise):
         if self.highpass_waveforms:
             logging.info("Will highpass waveforms at %f Hz",
                          highpass_waveforms)
-        self.zero_before_gate = zero_before_gate
-        self.zero_after_gate = zero_after_gate
+        # read in whether to zero out data before/after gate from kwargs
+        try:
+            self.zero_before_gate = bool(static_params['zero_before_gate'])
+        except KeyError:
+            self.zero_before_gate = False
+        try:
+            self.zero_after_gate = bool(static_params['zero_after_gate'])
+        except KeyError:
+            self.zero_after_gate = False
         # set up the boiler-plate attributes
         super().__init__(
             variable_params, data, low_frequency_cutoff, psds=psds,
