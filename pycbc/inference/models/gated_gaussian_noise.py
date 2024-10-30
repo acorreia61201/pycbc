@@ -192,7 +192,7 @@ class BaseGatedGaussian(BaseGaussianNoise):
         x = numpy.vstack([sample_sizes, numpy.ones(len(sample_sizes))]).T
         m, b = numpy.linalg.lstsq(x, sample_dets, rcond=None)[0]
         return (sample_sizes, sample_dets), (m, b)
-            
+
     def gate_indices(self, det):
         """Calculate the indices corresponding to start and end of gate.
         """
@@ -208,7 +208,7 @@ class BaseGatedGaussian(BaseGaussianNoise):
         lindex = lindex if lindex >= 0 else 0
         rindex = rindex if rindex <= len(ts) else len(ts)
         return lindex, rindex
-    
+
     def det_lognorm(self, det, start_index=None, end_index=None):
         """Calculate the normalization term from the truncated covariance matrix.
         Determinant is estimated using a linear fit to logdet vs truncated matrix size
@@ -240,7 +240,7 @@ class BaseGatedGaussian(BaseGaussianNoise):
         return self._normalize
 
     ### This is called before psds, so doing direct calls to self._psds, etc. throws an error for now ###
-    
+
     @normalize.setter
     def normalize(self, normalize):
         """Clears the current stats if the normalization state is changed.
@@ -351,7 +351,7 @@ class BaseGatedGaussian(BaseGaussianNoise):
             Dictionary of detector names -> FrequencySeries.
         """
         wfs = self.get_waveforms()
-        
+
         out = {}
         for det, h in wfs.items():
             d = self.data[det]
@@ -641,7 +641,7 @@ class GatedGaussianNoise(BaseGatedGaussian):
         return []
 
     ### This needs to be called after running model.update() for changes to take effect ###
-    
+
     def _loglikelihood(self):
         r"""Computes the log likelihood after removing the power within the
         given time window,
@@ -691,14 +691,14 @@ class GatedGaussianNoise(BaseGatedGaussian):
             rr = 4 * invasd.delta_f * rtilde[slc].inner(rtilde[slc]).real
             logl += norm - 0.5*rr
         return float(logl)
-    
+
     @property
     def multi_signal_support(self):
         """ The list of classes that this model supports in a multi-signal
         likelihood
         """
         return [type(self)]
-    
+
     def multi_loglikelihood(self, models):
         """ Calculate a multi-model (signal) likelihood
         """
@@ -826,23 +826,17 @@ class GatedGaussianMargPol(BaseGatedGaussian):
             # the waveforms are a dictionary of (hp, hc)
             pols = []
             for h in wfs[det]:
-                ht = h.to_timeseries() 
-                try:
-                    ht = ht.gate(gatestartdelay + dgatedelay/2,
+                ht = h.to_timeseries()
+                ht = ht.gate(gatestartdelay + dgatedelay/2,
                              window=dgatedelay/2, copy=False,
                              kernel=invasd, method='paint',
                              zero_before_gate=self.zero_before_gate,
                              zero_after_gate=self.zero_after_gate)
-                    h = ht.to_frequencyseries()
-                except ValueError as e:
-                    numpy.save('fail_params.out', self.current_params,
-                               allow_pickle=True)
-                    ht.save('fail_wf.hdf')
-                    raise e
+                h = ht.to_frequencyseries()
                 pols.append(h)
             out[det] = tuple(pols)
         return out
-    
+
     def get_gate_times_hmeco(self):
         """Gets the time to apply a gate based on the current sky position.
         Returns
@@ -969,14 +963,14 @@ class GatedGaussianMargPol(BaseGatedGaussian):
         # compute the marginalized log likelihood
         marglogl = special.logsumexp(loglr) + lognl - numpy.log(len(self.pol))
         return float(marglogl)
-    
+
     @property
     def multi_signal_support(self):
         """ The list of classes that this model supports in a multi-signal
         likelihood
         """
         return [type(self)]
-    
+
     def multi_loglikelihood(self, models):
         """ Calculate a multi-model (signal) likelihood
         """
