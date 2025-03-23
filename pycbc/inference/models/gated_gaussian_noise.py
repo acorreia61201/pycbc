@@ -682,7 +682,7 @@ class GatedGaussianNoise(BaseGatedGaussian):
             res = (data - h).to_timeseries()
             res = res.gate(gatestartdelay + dgatedelay/2,
                            window=dgatedelay/2, copy=False,
-                           invasd=invasd, method='paint',
+                           kernel=invasd, method='paint',
                            zero_before_gate=self.zero_before_gate,
                            zero_after_gate=self.zero_after_gate)
             rtilde = res.to_frequencyseries()
@@ -754,7 +754,7 @@ class GatedGaussianNoise(BaseGatedGaussian):
             res = (data - h).to_timeseries()
             res = res.gate(gatestartdelay + dgatedelay/2,
                            window=dgatedelay/2, copy=False,
-                           invasd=invasd, method='paint',
+                           kernel=invasd, method='paint',
                            zero_before_gate=self.zero_before_gate,
                            zero_after_gate=self.zero_after_gate)
             rtilde = res.to_frequencyseries()
