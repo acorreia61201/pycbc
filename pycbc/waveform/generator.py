@@ -337,7 +337,13 @@ class FDomainMassSpinRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        super(FDomainMassSpinRingdownGenerator, self).__init__(ringdown.get_fd_from_final_mass_spin,
+        if frozen_params['approximant'] == 'FdQNMfromFinalMassSpin':
+            approximant = ringdown.get_fd_from_final_mass_spin
+        elif frozen_params['approximant'] == 'FdModesfromFinalMassSpin':
+            approximant = ringdown.get_fd_modes_from_final_mass_spin
+        else:
+            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
+        super(FDomainMassSpinRingdownGenerator, self).__init__(approximant,
             variable_args=variable_args, **frozen_params)
 
 
@@ -365,7 +371,13 @@ class FDomainFreqTauRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        super(FDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_fd_from_freqtau,
+        if frozen_params['approximant'] == 'FdQNMfromFreqTau':
+            approximant = ringdown.get_fd_from_freqtau
+        elif frozen_params['approximant'] == 'FdModesfromFreqTau':
+            approximant = ringdown.get_fd_modes_from_freqtau
+        else:
+            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
+        super(FDomainFreqTauRingdownGenerator, self).__init__(approximant,
             variable_args=variable_args, **frozen_params)
 
 
@@ -393,7 +405,13 @@ class TDomainMassSpinRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        super(TDomainMassSpinRingdownGenerator, self).__init__(ringdown.get_td_from_final_mass_spin,
+        if frozen_params['approximant'] == 'TdQNMfromFinalMassSpin':
+            approximant = ringdown.get_td_from_final_mass_spin
+        elif frozen_params['approximant'] == 'TdModesfromFinalMassSpin':
+            approximant = ringdown.get_td_modes_from_final_mass_spin
+        else:
+            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
+        super(TDomainMassSpinRingdownGenerator, self).__init__(approximant,
             variable_args=variable_args, **frozen_params)
 
 
@@ -421,7 +439,13 @@ class TDomainFreqTauRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        super(TDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_td_from_freqtau,
+        if frozen_params['approximant'] == 'TdQNMfromFreqTau':
+            approximant = ringdown.get_td_from_freqtau
+        elif frozen_params['approximant'] == 'TdModesfromFreqTau':
+            approximant = ringdown.get_td_modes_from_freqtau
+        else:
+            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
+        super(TDomainFreqTauRingdownGenerator, self).__init__(approximant,
             variable_args=variable_args, **frozen_params)
 
 
@@ -1233,14 +1257,15 @@ def select_waveform_generator(approximant):
         return TDomainCBCGenerator
     # check if frequency-domain ringdown waveform
     elif approximant in ringdown.ringdown_fd_approximants:
-        if approximant == 'FdQNMfromFinalMassSpin':
+        if approximant in ['FdQNMfromFinalMassSpin', 'FdModesfromFinalMassSpin']:
             return FDomainMassSpinRingdownGenerator
-        elif approximant == 'FdQNMfromFreqTau':
+        elif approximant in ['FdQNMfromFreqTau', 'FdModesfromFreqTau']:
             return FDomainFreqTauRingdownGenerator
+    # check if time-domain ringdown waveform
     elif approximant in ringdown.ringdown_td_approximants:
-        if approximant == 'TdQNMfromFinalMassSpin':
+        if approximant in ['TdQNMfromFinalMassSpin', 'TdModesfromFinalMassSpin']:
             return TDomainMassSpinRingdownGenerator
-        elif approximant == 'TdQNMfromFreqTau':
+        elif approximant in ['TdQNMfromFreqTau', 'TdModesfromFreqTau']:
             return TDomainFreqTauRingdownGenerator
     # check if supernovae waveform:
     elif approximant in supernovae.supernovae_td_approximants:
