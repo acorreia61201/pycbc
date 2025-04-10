@@ -587,7 +587,6 @@ class BaseFDomainDetFrameGenerator(metaclass=ABCMeta):
         pass
 
 
-
 class FDomainDetFrameGenerator(BaseFDomainDetFrameGenerator):
     """Generates frequency-domain waveform in a specific frame.
 
