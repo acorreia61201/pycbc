@@ -588,7 +588,6 @@ class BaseFDomainDetFrameGenerator(metaclass=ABCMeta):
         pass
 
 
-
 class FDomainDetFrameGenerator(BaseFDomainDetFrameGenerator):
     """Generates frequency-domain waveform in a specific frame.
 
@@ -1290,11 +1289,15 @@ def select_waveform_modes_generator(approximant):
     generator : (PyCBC generator instance)
         A waveform generator object.
     """
+    fd_approximants = waveform.fd_approximants() + \
+                        list(ringdown.ringdown_fd_approximants.keys())
+    td_approximants = waveform.td_approximants() + \
+                        list(ringdown.ringdown_td_approximants.keys())
     # check if frequency-domain CBC waveform
-    if approximant in waveform.fd_approximants():
+    if approximant in fd_approximants:
         return FDomainCBCModesGenerator
     # check if time-domain CBC waveform
-    elif approximant in waveform.td_approximants():
+    elif approximant in td_approximants:
         return TDomainCBCModesGenerator
     # otherwise waveform approximant is not supported
     raise ValueError("%s is not a valid approximant." % approximant)
