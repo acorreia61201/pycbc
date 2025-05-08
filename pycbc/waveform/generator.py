@@ -1290,9 +1290,11 @@ def select_waveform_modes_generator(approximant):
         A waveform generator object.
     """
     fd_approximants = waveform.fd_approximants() + \
-                        list(ringdown.ringdown_fd_approximants.keys())
+                        list(ringdown.ringdown_fd_approximants.keys()) + \
+                        list(waveform_modes._mode_waveform_fd.keys())
     td_approximants = waveform.td_approximants() + \
-                        list(ringdown.ringdown_td_approximants.keys())
+                        list(ringdown.ringdown_td_approximants.keys()) + \
+                        list(waveform_modes._mode_waveform_td.keys())
     # check if frequency-domain CBC waveform
     if approximant in fd_approximants:
         return FDomainCBCModesGenerator
