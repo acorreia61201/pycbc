@@ -345,13 +345,7 @@ class FDomainMassSpinRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        if frozen_params['approximant'] == 'FdQNMfromFinalMassSpin':
-            approximant = ringdown.get_fd_from_final_mass_spin
-        elif frozen_params['approximant'] == 'FdModesfromFinalMassSpin':
-            approximant = ringdown.get_fd_modes_from_final_mass_spin
-        else:
-            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
-        super(FDomainMassSpinRingdownGenerator, self).__init__(approximant,
+        super(FDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_fd_from_final_mass_spin,
             variable_args=variable_args, **frozen_params)
 
 
@@ -379,13 +373,7 @@ class FDomainFreqTauRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        if frozen_params['approximant'] == 'FdQNMfromFreqTau':
-            approximant = ringdown.get_fd_from_freqtau
-        elif frozen_params['approximant'] == 'FdModesfromFreqTau':
-            approximant = ringdown.get_fd_modes_from_freqtau
-        else:
-            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
-        super(FDomainFreqTauRingdownGenerator, self).__init__(approximant,
+        super(FDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_fd_from_freqtau,
             variable_args=variable_args, **frozen_params)
 
 
@@ -413,13 +401,7 @@ class TDomainMassSpinRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        if frozen_params['approximant'] == 'TdQNMfromFinalMassSpin':
-            approximant = ringdown.get_td_from_final_mass_spin
-        elif frozen_params['approximant'] == 'TdModesfromFinalMassSpin':
-            approximant = ringdown.get_td_modes_from_final_mass_spin
-        else:
-            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
-        super(TDomainMassSpinRingdownGenerator, self).__init__(approximant,
+        super(TDomainMassSpinRingdownGenerator, self).__init__(ringdown.get_td_from_final_mass_spin,
             variable_args=variable_args, **frozen_params)
 
 
@@ -447,13 +429,7 @@ class TDomainFreqTauRingdownGenerator(BaseGenerator):
 
     """
     def __init__(self, variable_args=(), **frozen_params):
-        if frozen_params['approximant'] == 'TdQNMfromFreqTau':
-            approximant = ringdown.get_td_from_freqtau
-        elif frozen_params['approximant'] == 'TdModesfromFreqTau':
-            approximant = ringdown.get_td_modes_from_freqtau
-        else:
-            raise ValueError(f"Invalid approximant name: {frozen_params['approximant']}")
-        super(TDomainFreqTauRingdownGenerator, self).__init__(approximant,
+        super(TDomainFreqTauRingdownGenerator, self).__init__(ringdown.get_td_from_freqtau,
             variable_args=variable_args, **frozen_params)
 
 
@@ -1416,20 +1392,17 @@ def get_td_generator(approximant, modes=False):
         if modes:
             return TDomainCBCModesGenerator
         return TDomainCBCGenerator
-    
-    if approximant in waveform_modes._mode_waveform_td:
-        return TDomainCBCModesGenerator
 
     if approximant in ringdown.ringdown_td_approximants:
-        if approximant in ['TdQNMfromFinalMassSpin', 'TdModesfromFinalMassSpin']:
+        if approximant == 'TdQNMfromFinalMassSpin':
             return TDomainMassSpinRingdownGenerator
         return TDomainFreqTauRingdownGenerator
 
     if approximant in supernovae.supernovae_td_approximants:
         return TDomainSupernovaeGenerator
 
-    raise ValueError("No time-domain generator found for" 
-                         f"approximant: {approximant}")
+    raise ValueError(f"No time-domain generator found for " 
+                      "approximant: {approximant}")
 
 def get_fd_generator(approximant, modes=False):
     """Returns the frequency-domain generator for the given approximant."""
@@ -1437,17 +1410,14 @@ def get_fd_generator(approximant, modes=False):
         if modes:
             return FDomainCBCModesGenerator
         return FDomainCBCGenerator
-    
-    if approximant in waveform_modes._mode_waveform_fd:
-        return FDomainCBCModesGenerator
 
     if approximant in ringdown.ringdown_fd_approximants:
-        if approximant == ['FdQNMfromFinalMassSpin', 'FdModesfromFinalMassSpin']:
+        if approximant == 'FdQNMfromFinalMassSpin':
             return FDomainMassSpinRingdownGenerator
         return FDomainFreqTauRingdownGenerator
 
-    raise ValueError("No frequency-domain generator found for"
-                         f"approximant: {approximant}")
+    raise ValueError(f"No frequency-domain generator found for "
+                      "approximant: {approximant}")
 
 def select_waveform_generator(approximant, domain=None):
     """Returns the single-IFO generator for the approximant.
