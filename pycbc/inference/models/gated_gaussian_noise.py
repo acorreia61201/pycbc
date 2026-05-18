@@ -1070,6 +1070,7 @@ class GatedGaussianMargPhase(BaseGatedGaussian):
                  high_frequency_cutoff=None, normalize=False,
                  static_params=None,
                  phase_samples=500000, phase_names=None,
+                 amp_names=None, constrained_amps=None,
                  ref_phase=None, **kwargs):
         # set up the boiler-plate attributes
         super().__init__(
@@ -1097,6 +1098,31 @@ class GatedGaussianMargPhase(BaseGatedGaussian):
         else:
             raise TypeError('Unrecognized format for phase_names arg. Accepts '
                             'string, list, or None')
+        # amplitude constraint parameters
+        if amp_names is None:
+            logging.warning('No amp_names provided. No constraints will be '
+                            'applied to mode amps')
+            self.amp_names = None
+        elif type(amp_names) == list:
+            self.amp_names = amp_names
+        elif type(amp_names) == str:
+            self.amp_names = amp_names.split(' ')
+        else:
+            raise TypeError('Unrecognized format for amp_names arg. Accepts '
+                            'string, list, or None')
+        if constrained_amps is None:
+            logging.warning('No constrained_amps provided. No constraints will be '
+                            'applied to mode amps')
+            self.constrained_amps = None
+        elif type(constrained_amps) == list:
+            self.constrained_amps = constrained_amps
+        elif type(constrained_amps) == str:
+            self.constrained_amps = constrained_amps.split(' ')
+        else:
+            raise TypeError('Unrecognized format for constrained_amps arg. Accepts '
+                            'string, list, or None')
+        for i in constrained_amps:
+            assert i in amp_names, f"Constrained amp name {i} not in provided amp_names {amp_names}"
         # create the waveform generator
         self.waveform_generator = create_waveform_generator(
             self.variable_params, self.data,
@@ -1157,11 +1183,77 @@ class GatedGaussianMargPhase(BaseGatedGaussian):
     def _extra_stats(self):
         """Adds the maxL phase and corresponding likelihood."""
         return ['maxl_phase', 'maxl_logl']
+    
+    def _calc_mode_snrs(self, mode=None, mode_list=None):
+        """
+        Calculate the optimal SNR for a selected mode in a multimode signal.
+
+        Parameters
+        ----------
+        mode : str
+            The name of the amplitude parameters corresponding to the mode to
+            calculate SNR
+        mode_list : list
+            List of amplitude names for all modes in the signal. Throws an
+            error if the ``mode`` argument is not in this list.
+
+        Returns
+        -------
+        float
+            The optimal SNR of the specified mode.
+        """
+        # exit if no constrained modes given
+        if mode_list is None or mode is None:
+            return None
+        save_params = self.current_params.copy()
+        for i in mode_list:
+            if i != mode:
+                if 'log' in i:
+                    self.current_params[i] = -numpy.inf
+                else:
+                    self.current_params[i] = 0.
+        # evaluate the single mode waveform
+        self._current_wfs = None
+        wfs = self.get_waveforms()
+        gated_wfs = self.get_gated_waveforms()
+        # calculate the optimal SNR of the gated wf
+        opt_snr = 0.
+        for det in self._invpsds.keys():
+            invpsd = self._invpsds[det]
+            slc = slice(self._kmin[det], self._kmax[det])
+            hc = wfs[det][0]
+            hcg = gated_wfs[det][0]
+            hh = hc[slc].inner(hcg[slc] * 4 * invpsd[slc] * invpsd.delta_f).real
+            opt_snr += hh*hh
+        # reset the params and current wfs for the full likelihood
+        self._current_wfs = None
+        for i in mode_list:
+            self.current_params[i] = save_params[i]
+        return opt_snr**(1./4.)
 
     @catch_waveform_error
     def _loglikelihood(self):
         r"""Computes the log likelihood.
         """
+        # get SNRs of specified amps and scale to sampled SNRs
+        for mode in self.constrained_amps:
+            unmodded_amp = self.current_params[mode]
+            snr = self._calc_mode_snrs(mode=mode, mode_list=self.amp_names)
+            print(mode)
+            print(snr)
+            ### FIXME: assumes there's a parameter e.g. `amp220_snr` in
+            ### variable_params that samples the target SNR for this mode
+            sampled_snr = mode + '_snr'
+            if snr is not None:
+                snr_scale = self.current_params[sampled_snr] / snr
+            else:
+                snr_scale = 1.
+            print(snr_scale)
+            ### FIXME: surely a more elegant way to ensure we're not double
+            ### dipping snr scaling here
+            ### also this assumes same SNR scale for all dets
+            if self.current_params[mode] == unmodded_amp:
+                self.current_params[mode] *= snr_scale
         # get waveforms
         wfs = self.get_waveforms()
         gated_wfs = self.get_gated_waveforms()
