@@ -1,6 +1,6 @@
 #! /user/bin/env python
 
-# Copyright (C) 2026 Alex Correia
+# Copyright (C) 2017 Collin Capano
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -25,7 +25,17 @@
 # =============================================================================
 #
 """
-Combines posteriors over all runs
+Extracts posterior samples from a Sampler HDF file, writing to a
+posterior HDF file. Parameters can be renamed in the output file using the
+--parameters option.
+
+If more than one file is provided, the samples from all of the files will
+be combined. Some attempt is made to check that the files share common
+attributes. Sampler info (stored in the 'sampler_info' group) will not be
+written when multiple files are combined. All other groups, unless explicitly
+skipped (see the --skip-groups option), will be written using the first file.
+No attempt is made to check that the data in these other groups is the same
+across combined files.
 """
 
 import os
@@ -204,6 +214,16 @@ out = loadfile(opts.output_file, "w", filetype=outtype)
 # write the samples
 out.write_samples(samples)
 
+# Preserve samples group metadata
+for fp in fps:
+    for key, val in fp[fp.samples_group].attrs.items():
+        val = format_attr(val)
+        try:
+            current_val = out[out.samples_group].attrs[key]
+        except KeyError:
+            out[out.samples_group].attrs[key] = val
+            current_val = val
+
 # Preserve top-level metadata...
 # ...except for: the filetype, since that's set when the file was loaded;
 # the automatic thinning settings, since those will no longer make sense;
@@ -226,6 +246,42 @@ skip_attrs = [
 # via sampling if specified
 if len(opts.input_file) > 1:
     skip_attrs += ["log_evidence", "dlog_evidence"]
+
+# make sure attrs are the same between files...
+cat_params = False
+for fp in fps:
+    for key in map(format_attr, fp.attrs):
+        if key not in skip_attrs:
+            val = format_attr(fp.attrs[key])
+            try:
+                current_val = format_attr(out.attrs[key])
+            except KeyError:
+                out.attrs[key] = val
+                current_val = format_attr(out.attrs[key])
+
+# store what parameters were renamed (if not already saved above)
+if not cat_params:
+    remapped_params = list(labels.items())
+    # if the input file was itself extracted, write in terms of remapped params
+    # this preserves lineage to original sampled params when extracting
+    # multiple times
+    if "remapped_params" in fps[0].attrs:
+        input_funcs = {
+            format_attr(p): format_attr(f) for f, p in fps[0].attrs["remapped_params"]
+        }
+
+        def to_input_func(match):
+            name = match.group()
+            func = input_funcs.get(name, name)
+            return name if func == name else f"({func})"
+
+        # matches identifiers (e.g., 'q' in 'q*2'), but not attributes or
+        # exponents (e.g., 'bar' in 'foo.bar' or 'e5' in '1e5')
+        remapped_params = [
+            (re.sub(r"(?<![\w.])[A-Za-z_]\w*", to_input_func, func), param)
+            for func, param in remapped_params
+        ]
+    out.attrs["remapped_params"] = remapped_params
 
 # write combined evidence and dlog evidence if combining via sampling
 if opts.combine_via_sampling:
